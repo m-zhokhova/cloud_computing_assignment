@@ -1,6 +1,6 @@
 # Cloud Computing Assignment 
 ## Implementation of the backend for a hospital system with GCP
 
-* Pedro Martinsa up202007065
+* Pedro Martins up202007065
 * Mariia Zhokhova up202408799
-* Kumar Baruaa up202401067
+* Kumar Barua up202401067
