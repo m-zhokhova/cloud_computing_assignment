@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patients</title>
+</head>
+<body>
+    <h1>Patient List</h1>
+    <ul>
+        {% for patient in patients %}
+            <li>
+                <a href="{{ url_for('show_patient_details', subject_id=patient.subject_id) }}">
+                    Patient {{ patient.subject_id }} - {{ patient.gender }}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

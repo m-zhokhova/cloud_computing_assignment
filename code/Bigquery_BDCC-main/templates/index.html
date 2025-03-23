@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient List</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body class="container mt-4">
+
+    <h2 class="mb-4">Patient List</h2>
+    <p><strong>Logged in as:</strong> <span class="badge bg-info"><strong>{{ username }}</strong></span></p>
+    <a class="btn btn-danger ms-3" href="{{ url_for('logout') }}">Logout</a>
+
+    <!-- Search Box -->
+    <div class="mb-3">
+        <input type="text" id="search" class="form-control" placeholder="Search by Subject ID or HADM ID" oninput="searchPatients()">
+    </div>
+
+    <!-- Patient Table -->
+    <table class="table table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Subject ID</th>
+                <th>HADM ID</th>
+                <th>Admission Time</th>
+                <th>Gender</th>
+                <th>Date of Birth</th>
+                <th>Profile Image</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="patientTableBody">
+            {% for patient in patients %}
+            <tr>
+                <td>{{ patient.subject_id }}</td>
+                <td>{{ patient.hadm_id }}</td>
+                <td>{{ patient.admittime }}</td>
+                <td>{{ patient.gender }}</td>
+                <td>{{ patient.dob }}</td>
+                <td>
+                    
+                        {% if patient.identity_doc %}
+                            <img src="{{ patient.identity_doc }}" alt="Profile Image" width="50">
+                        {% else %}
+                            No Image
+                        {% endif %}
+                    
+                </td>
+                <td>
+                    <button class="btn btn-info btn-sm" onclick="viewPatient({{ patient.subject_id }})">View</button>
+                    <button class="btn btn-warning btn-sm" onclick="editPatient({{ patient.subject_id }})">Edit</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div>
+        {% if page > 1 %}
+            <a href="?search={{ search_query }}&page={{ page - 1 }}&limit={{ limit }}">Previous</a>
+        {% endif %}
+        <a href="?search={{ search_query }}&page={{ page + 1 }}&limit={{ limit }}">Next</a>
+    </div>
+
+    <!-- Edit Patient Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Patient</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editPatientForm" enctype="multipart/form-data">
+                        <input type="hidden" id="editSubjectId">
+                        <div class="mb-3">
+                            <label for="editGender" class="form-label">Gender</label>
+                            <select id="editGender" class="form-control">
+                                <option value="M">Male</option>
+                                <option value="F">Female</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editDob" class="form-label">Date of Birth</label>
+                            <input type="date" id="editDob" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editImage" class="form-label">Profile Image</label>
+                            <input type="file" id="editImage" class="form-control" accept="image/*">
+                        </div>
+                        <div class="mb-3">
+                            <img id="previewImage" src="" alt="No Image" style="max-width: 100px; display: none;">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function viewPatient(subject_id,username) {
+            console.log("Redirecting to:", `/patient/details/${subject_id}`);
+         
+            window.location.href = `/patient/details/${subject_id}?user=${username}`;
+        }
+
+        function editPatient(subject_id) {
+            console.log("Fetching details for patient:", subject_id);
+
+            $.ajax({
+                url: `/patient/edit/${subject_id}`,
+                type: "GET",
+                dataType: "json",
+                success: function(patient) {
+                    console.log("Received patient data:", patient);
+
+                    if (!patient) {
+                        alert("Error: No patient data received.");
+                        return;
+                    }
+
+                    $("#editSubjectId").val(patient.subject_id);
+                    $("#editGender").val(patient.gender);
+                    $("#editDob").val(patient.dob);
+                    
+
+
+                    if (patient.identity_doc) {
+                        $("#previewImage").attr("src", patient.identity_doc).show();
+                        
+                    } else {
+                        $("#previewImage").hide();
+                    }
+
+                    $("#editModal").modal("show");
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error fetching patient data:", error);
+                    alert("Failed to fetch patient details.");
+                }
+            });
+        }
+
+        $("#editImage").change(function () {
+            let file = this.files[0];
+            if (file) {
+                let reader = new FileReader();
+                reader.onload = function (e) {
+                    $("#previewImage").attr("src", e.target.result).show();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        $("#editPatientForm").submit(function (event) {
+            event.preventDefault();
+
+            let subject_id = $("#editSubjectId").val();
+            let formData = new FormData();
+            formData.append("gender", $("#editGender").val());
+            formData.append("dob", $("#editDob").val());
+            formData.append("image", $("#editImage")[0].files[0]);
+
+            $.ajax({
+                url: `/update_patient/${subject_id}`,
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (response) {
+                    alert("✅ Patient updated successfully!\n\n📝 QUERY:\n" + response.query + 
+                          "\n\n📝 PARAMETERS:\n" + response.parameters.join("\n"));
+                    location.reload();
+                },
+                error: function (xhr) {
+                    console.error("❌ Error updating patient:", response.query);
+            
+                    let errorMessage = "❌ Error updating patient.\n";
+            
+                    try {
+                        let response = JSON.parse(xhr.responseText);
+                        errorMessage += "\n📝 QUERY:\n" + response.query;
+                        errorMessage += "\n\n📝 PARAMETERS:\n" + response.parameters.join("\n");
+                    } catch (e) {
+                        errorMessage += "\n⚠️ Unable to parse error response.";
+                    }
+            
+                    alert(errorMessage);
+                }
+            });
+    
+        });
+
+        function searchPatients() {
+            let searchQuery = document.getElementById("search").value;
+            let url = `/json?search=${encodeURIComponent(searchQuery)}&page=1&limit=10`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    let tableBody = document.getElementById("patientTableBody");
+                    tableBody.innerHTML = "";
+
+                    data.forEach(patient => {
+                        let imageTag = patient.image
+                            ? `<img src="/static/uploads/${patient.image}" width="50">`
+                            : "No Image";
+
+                        let row = `<tr>
+                            <td>${patient.subject_id}</td>
+                            <td>${patient.hadm_id}</td>
+                            <td>${patient.admittime}</td>
+                            <td>${patient.gender || '-'}</td>
+                            <td>${patient.dob || '-'}</td>
+                            <td>${patient.identity_doc ? `<img src="${patient.identity_doc}" width="50">` : "No Image"}</td>
+                            <td>
+                            
+                                <button class="btn btn-info btn-sm" onclick="viewPatient(${patient.subject_id})">View</button>
+                                <button class="btn btn-warning btn-sm" onclick="editPatient(${patient.subject_id})">Edit</button>
+                            </td>
+                        </tr>`;
+                        tableBody.innerHTML += row;
+                    });
+                })
+                .catch(error => console.error("Error fetching data:", error));
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
