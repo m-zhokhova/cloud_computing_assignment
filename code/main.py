@@ -8,7 +8,7 @@ from google.cloud import bigquery, storage
 
 app = Flask(__name__)
 
-# ✅ Set a strong secret key
+# Set a strong secret key
 app.secret_key = os.getenv("SECRET_KEY", "supersecretkey")  # Use environment variable for production!
 
 bigquery_client = bigquery.Client()
@@ -26,7 +26,7 @@ users = {
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form.get("username")  # ✅ Use .get() to avoid KeyErrors
+        username = request.form.get("username")  # Use .get() to avoid KeyErrors
         password = request.form.get("password")
 
         if not username or not password:
@@ -34,7 +34,7 @@ def login():
 
         # Check if user exists
         if username in users and check_password_hash(users[username]["password"], password):
-            #session.clear()  # ✅ Clear session before setting new user session
+            #session.clear()  # Clear session before setting new user session
             session["username"] = username
             session["user_role"] = users[username]["role"]
 
@@ -58,7 +58,7 @@ def logout():
 @app.route("/")
 def home():
    # session.clear()
-        # ✅ Redirect to login if not authenticated
+        # Redirect to login if not authenticated
     if "username" not in session:
         print("🔴 User not logged in! Redirecting to login page.")
         return redirect(url_for("login"))
@@ -121,7 +121,7 @@ def home():
     search_query=search_query,
     page=page,
     limit=limit,
-    username=session.get("username")  # ✅ Pass username to template
+    username=session.get("username")  # Pass username to template
     )
 
 @app.route("/json")
