@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient {{ subject_id }}</title>
+</head>
+<body>
+    <h1>Patient ID: {{ subject_id }}</h1>
+
+    {% if image_path %}
+        <img src="{{ image_path }}" alt="Patient Image" width="200">
+    {% else %}
+        <p>No image uploaded.</p>
+    {% endif %}
+
+    <h3>Upload Image</h3>
+    <form action="{{ url_for('upload_image', subject_id=subject_id) }}" method="POST" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <button type="submit">Upload</button>
+    </form>
+
+    <a href="/">Back to List</a>
+</body>
+</html>
